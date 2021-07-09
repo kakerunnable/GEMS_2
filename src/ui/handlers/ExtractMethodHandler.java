@@ -90,7 +90,7 @@ extends AbstractUIPlugin implements IStartup
 {
 	
 	private String PROJECT_NAME = "Android-IMSI-Catcher-Detector";
-	private String FILE_PATH = "AIMSICD/src/main/java/com/secupwn/aimsicd/AndroidIMSICatcherDetector.java";
+	private String FILE_PATH = "AIMSICD/src/main/java/com/secupwn/aimsicd/AndroidIMSICatcherDetector.java"; // 任意のファイルを指定する
 
 	@Override
 	public void earlyStartup() {
