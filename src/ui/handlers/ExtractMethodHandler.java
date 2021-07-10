@@ -140,8 +140,8 @@ extends AbstractUIPlugin implements IStartup
 		/*
 		 onCreate の 62〜67行目 を抽出する場合の selectionStart と selectionLength は以下の値になると思われる．
 		 今回は，
-		 selectionStart は wcコマンドで 62行目 までのバイト数を測った．
-		 selectionLength は wcコマンドで位置(行, 列) = (67, 55) までのバイト数（67行目の;までのバイト数）を測った結果（= 2330）から，selectionStart を引いて求めた，
+		 selectionStart は wcコマンドで62行目に到達するまで（61行目まで）のバイト数を測った．
+		 selectionLength は wcコマンドで67行目まで（68行目に到達するまで）のバイト数を測った結果（= 2330）から，selectionStart を引いて求めた，
 		 このソースコードを編集せずに実行すると，AndroidIMSICatcherDetector.java の 62〜67行目 が抽出されて，"extracted"という名前のメソッドが下記のように完成する．
 		 ---
 			private Realm extracted() {
@@ -161,11 +161,7 @@ extends AbstractUIPlugin implements IStartup
 		extractMethodRefactoring(ifile, selectionStart, selectionLength);
 		
 		/*
-		 実装②：ここで，抽出されたメソッドの名前を，"extracted"から任意の値に変更する
-		*/
-		
-		/*
-		 実装③：ここで，抽出されたメソッド（名前変更後）を任意のパスにファイル形式で保存（形式.javaで）
+		 実装②：ここで，抽出されたメソッドを任意のパスにファイル形式で保存（形式.javaで）
 		*/
 		
 		return;
@@ -182,6 +178,7 @@ extends AbstractUIPlugin implements IStartup
 	    try {
 	        NullProgressMonitor pm = new NullProgressMonitor();
 	        tempR.checkAllConditions(pm);
+	        tempR.setMethodName("testMethod");  // setMethodName で名前を変更できる
 	        Change change = tempR.createChange(pm);
 	        change.perform(pm);
 	    } catch (Exception e) {e.printStackTrace();}
