@@ -142,8 +142,12 @@ extends AbstractUIPlugin implements IStartup
 		 今回は，
 		 selectionStart は wcコマンドで62行目に到達するまで（61行目まで）のバイト数を測った．
 		 selectionLength は wcコマンドで67行目まで（68行目に到達するまで）のバイト数を測った結果（= 2330）から，selectionStart を引いて求めた，
+<<<<<<< HEAD
 		 このソースコードを編集せずに実行すると，AndroidIMSICatcherDetector.java の 62〜67行目 が抽出されて，
 		 extractMethodRefactoring()の中で指定した名前（今回は"testMethod"）のメソッドが下記のように完成する．
+=======
+		 このソースコードを編集せずに実行すると，AndroidIMSICatcherDetector.java の 62〜67行目 が抽出されて，"extracted"という名前のメソッドが下記のように完成する．
+>>>>>>> 7dee69b6acec14d2d64a48052f94904beb95eec5
 		 ---
 			private Realm testMethod() {
 				RealmConfiguration realmConfiguration = new RealmConfiguration.Builder(this)
