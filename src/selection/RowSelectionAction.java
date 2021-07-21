@@ -1,7 +1,5 @@
 package selection;
 
-import com.google.common.io.Files;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -9,15 +7,26 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import com.google.common.io.Files;
+
 public class RowSelectionAction {
 
-  public static RowSelection run(File file, Integer rowRangeFirst, Integer rowRangeEnd) throws IOException {
+  public static RowSelection run(File file, Integer rowRangeFirst, Integer rowRangeEnd) {
 
     // 引数チェック
-    RowSelectionValidator.validate(file, rowRangeFirst, rowRangeEnd);
+    try {
+		RowSelectionValidator.validate(file, rowRangeFirst, rowRangeEnd);
+	} catch (IOException e) {
+		throw new RuntimeException(e);
+	}
 
     // すべての行をリストで取得
-    List<String> lines = Files.readLines(file, Charset.defaultCharset());
+    List<String> lines;
+	try {
+		lines = Files.readLines(file, Charset.defaultCharset());
+	} catch (IOException e) {
+		throw new RuntimeException(e);
+	}
     // すべての行を結合
     String allLines = lines.stream().collect(Collectors.joining(System.lineSeparator()));
 
