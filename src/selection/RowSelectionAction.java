@@ -30,13 +30,19 @@ public class RowSelectionAction {
     // すべての行を結合
     String allLines = lines.stream().collect(Collectors.joining(System.lineSeparator()));
 
+    // 最初の行から抽出対象行まで取得
+    String firstLines = IntStream.range(0, rowRangeFirst)
+            .mapToObj(lines::get)
+            .collect(Collectors.joining(System.lineSeparator()));
+
+
     // 抽出対象行のみ取得
     String extractLines = IntStream.range(rowRangeFirst - 1, rowRangeEnd)
         .mapToObj(lines::get)
         .collect(Collectors.joining(System.lineSeparator()));
 
     // 開始位置・長さを取得
-    Integer start = allLines.indexOf(extractLines);
+    Integer start = firstLines.length() - lines.get(rowRangeFirst - 1).length();
     Integer length = extractLines.length();
 
     return RowSelection.of(start, length);

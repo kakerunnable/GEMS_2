@@ -104,7 +104,7 @@ extends AbstractUIPlugin implements IStartup
 		*/
 
 		// 抽出箇所の取得
-		selection.RowSelection rowSelection = selection.RowSelectionAction.run(file, 7, 8);
+		selection.RowSelection rowSelection = selection.RowSelectionAction.run(file, 14, 16);
 
 		// リファクタリング情報取得
 		ExtractMethodRefactoring emr = extractMethodRefactoring(ifile, rowSelection);
