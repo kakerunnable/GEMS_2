@@ -1,5 +1,13 @@
 package ui.handlers;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
+import java.util.Deque;
+import java.util.LinkedList;
+import java.util.StringJoiner;
+
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -19,7 +27,9 @@ import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 
+import Util.ReflectUtils;
 import file.SaveFile;
+import ui.ChangeResult;
 
 public class ExtractMethodHandler
 //extends AbstractHandler
@@ -41,7 +51,7 @@ extends AbstractUIPlugin implements IStartup
 		IPath path = new Path(FILE_PATH);
 		IFile ifile = project.getFile(path);
 
-		// 普通のファイル取得
+		// ファイル取得
 		SaveFile file = new SaveFile(ifile.getLocation().toFile().toPath().toAbsolutePath().normalize().toFile());
 
 		// 元のクラスを保持しておく
@@ -113,20 +123,78 @@ extends AbstractUIPlugin implements IStartup
 		String newMethodName = "extractMethod";
 
 		// リファクタリング実行
-		executeRefactoring(emr, newMethodName);
+		ChangeResult result = executeRefactoring(emr, newMethodName);
 
 		/*
 		 実装②：ここで，抽出されたメソッドを任意のパスにファイル形式で保存（形式.javaで）
 		*/
 
-		// TODO 詳細確認中
+		// 1. 対象メソッド元の構文を取得
+		Object fAnalyzer = ReflectUtils.getFieldValue(ExtractMethodRefactoring.class, "fAnalyzer", emr);
+		Object fEnclosingBodyDeclaration = ReflectUtils.getFieldValue(fAnalyzer.getClass(), "fEnclosingBodyDeclaration", fAnalyzer);
+		String targetBeforeMethodName = ReflectUtils.getFieldValue(fEnclosingBodyDeclaration.getClass(), "methodName", fEnclosingBodyDeclaration).toString();
+		String targetBeforeMethodCode = fEnclosingBodyDeclaration.toString();
+
+		// メソッドの出力フォルダ作成
+		java.nio.file.Path saveDirRoot = file.toPath().getParent().resolve(file.getName().split("\\.")[0]);
+		saveDirRoot.toFile().mkdirs();
+
+		// メソッドの出力
+		try {
+			File targetFile = saveDirRoot.resolve(targetBeforeMethodName + ".java").toFile();
+			Files.write(targetFile.toPath(), targetBeforeMethodCode.getBytes(), StandardOpenOption.CREATE);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		// 2. リファクタリング後のメソッドを取得
+		String regex = result.diffMethodRegex();
+		SaveFile currentFile = new SaveFile(file);
+		currentFile.save();
+		String[] lines = currentFile.getSaved().split(System.lineSeparator());
+		StringJoiner joiner = new StringJoiner(System.lineSeparator());
+		Deque<Character> queue = new LinkedList<>();
+		boolean matched = false;
+		for (String line : lines) {
+
+			if (line.matches(regex)) {
+				matched = true;
+			}
+
+			if (!matched) {
+				continue;
+			}
+
+			line.chars().forEachOrdered(c -> {
+				boolean anymatch = false;
+				if (c == '{') {
+					queue.add((char)c);
+				} else if (c == '}') {
+					queue.poll();
+				}
+			});
+
+			joiner.add(line);
+
+			if (queue.size() == 0) {
+				break;
+			}
+		}
+		String extractMethodCode = joiner.toString();
+
+		// メソッドの出力
+		try {
+			File targetFile = saveDirRoot.resolve(newMethodName + ".java").toFile();
+			Files.write(targetFile.toPath(), extractMethodCode.getBytes(), StandardOpenOption.CREATE);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 
 		/*
 		 実装③：抽出前の状態に戻す
 		*/
-		file.load();
 
-		return;
+		file.load();
 	}
 
 	@SuppressWarnings("restriction")
@@ -139,14 +207,19 @@ extends AbstractUIPlugin implements IStartup
 	}
 
 	@SuppressWarnings("restriction")
-	public static Change executeRefactoring(ExtractMethodRefactoring emr, String newMethodName) {
+	public static ChangeResult executeRefactoring(ExtractMethodRefactoring emr, String newMethodName) {
 
 	    try {
 	        NullProgressMonitor pm = new NullProgressMonitor();
 	        emr.checkAllConditions(pm);
 	        emr.setMethodName(newMethodName);  // setMethodName で名前を変更できる
-	        Change change = emr.createChange(pm);
-	        return change.perform(pm);
+	        Change before = emr.createChange(pm);
+	        String unitBefore = ReflectUtils.getFieldValue(before.getClass(), "fCUnit", before).toString();
+
+	        Change after = before.perform(pm);
+	        String unitAfter = ReflectUtils.getFieldValue(after.getClass(), "fCUnit", after).toString();
+
+	        return new ChangeResult(unitBefore, unitAfter);
 	    } catch (Exception e) {
 	    	throw new RuntimeException(e);
 	    }
