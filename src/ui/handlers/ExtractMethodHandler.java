@@ -141,7 +141,7 @@ extends AbstractUIPlugin implements IStartup
 
 		// メソッドの出力
 		try {
-			File targetFile = saveDirRoot.resolve(targetBeforeMethodName + ".java").toFile();
+			File targetFile = saveDirRoot.resolve(targetBeforeMethodName + "_before.java").toFile();
 			Files.write(targetFile.toPath(), targetBeforeMethodCode.getBytes(), StandardOpenOption.CREATE);
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -151,41 +151,26 @@ extends AbstractUIPlugin implements IStartup
 		String regex = result.diffMethodRegex();
 		SaveFile currentFile = new SaveFile(file);
 		currentFile.save();
-		String[] lines = currentFile.getSaved().split(System.lineSeparator());
-		StringJoiner joiner = new StringJoiner(System.lineSeparator());
-		Deque<Character> queue = new LinkedList<>();
-		boolean matched = false;
-		for (String line : lines) {
 
-			if (line.matches(regex)) {
-				matched = true;
-			}
-
-			if (!matched) {
-				continue;
-			}
-
-			line.chars().forEachOrdered(c -> {
-				boolean anymatch = false;
-				if (c == '{') {
-					queue.add((char)c);
-				} else if (c == '}') {
-					queue.poll();
-				}
-			});
-
-			joiner.add(line);
-
-			if (queue.size() == 0) {
-				break;
-			}
-		}
-		String extractMethodCode = joiner.toString();
+		String extractMethodCode = extractMethodCode(currentFile, regex);
 
 		// メソッドの出力
 		try {
 			File targetFile = saveDirRoot.resolve(newMethodName + ".java").toFile();
 			Files.write(targetFile.toPath(), extractMethodCode.getBytes(), StandardOpenOption.CREATE);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		// 3. リファクタリング後の抽出元メソッドを取得
+		currentFile.save();
+		String afterRegex = "^.+" + targetBeforeMethodName + "\\(.*\\).*";
+		String afterMethodCode = extractMethodCode(currentFile, afterRegex);
+
+		// メソッドの出力
+		try {
+			File targetFile = saveDirRoot.resolve(targetBeforeMethodName + "_after.java").toFile();
+			Files.write(targetFile.toPath(), afterMethodCode.getBytes(), StandardOpenOption.CREATE);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -223,6 +208,41 @@ extends AbstractUIPlugin implements IStartup
 	    } catch (Exception e) {
 	    	throw new RuntimeException(e);
 	    }
+	}
+
+	private static String extractMethodCode(SaveFile file, String regex) {
+
+		String[] lines = file.getSaved().split(System.lineSeparator());
+		StringJoiner joiner = new StringJoiner(System.lineSeparator());
+		Deque<Character> queue = new LinkedList<>();
+		boolean matched = false;
+		for (String line : lines) {
+
+			if (line.matches(regex)) {
+				matched = true;
+			}
+
+			if (!matched) {
+				continue;
+			}
+
+			line.chars().forEachOrdered(c -> {
+				boolean anymatch = false;
+				if (c == '{') {
+					queue.add((char)c);
+				} else if (c == '}') {
+					queue.poll();
+				}
+			});
+
+			joiner.add(line);
+
+			if (queue.size() == 0) {
+				break;
+			}
+		}
+
+		return joiner.toString();
 	}
 
 }
